@@ -1,0 +1,24 @@
+{
+  "name": "phishnchips-decision-models",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "prepare-data": "node ../scripts/prepare-data.mjs",
+    "predev": "npm run prepare-data",
+    "dev": "astro dev",
+    "prebuild": "npm run prepare-data",
+    "build": "astro build",
+    "preview": "astro preview",
+    "pretest": "npm run prepare-data",
+    "test": "node --check src/scripts/dashboard.js && node --test tests/model.test.mjs tests/prepare-data.test.mjs",
+    "verify": "node --test tests/verify-build.mjs",
+    "check": "npm test && npm run build && npm run verify"
+  },
+  "dependencies": {
+    "astro": "^7.3.5"
+  }
+}

@@ -1,0 +1,250 @@
+---
+import Base from "../layouts/Base.astro";
+import data from "../data/results.json";
+import { pct, int, sortRows } from "../lib/model.mjs";
+
+const run = data.run;
+const method = data.method;
+const main = data.datasets[0];
+const failure = run.failures[0];
+const heatModels = sortRows(data.results.all, "accuracy");
+const cell = (id: string, model: string) => data.results[id as keyof typeof data.results].find((r) => r.model === model)!;
+const kindLabel = { mixed: "both classes", phishing: "phishing only", legitimate: "legitimate only" } as const;
+const metricNote = { mixed: "accuracy", phishing: "detection rate", legitimate: "pass rate" } as const;
+---
+<Base
+  title="PhishNChips: 12 AI decision models on phishing detection | EmDash Cyber"
+  description={`A dashboard comparing ${run.models} AI decision models across ${int(run.completed)} PhishNChips phishing-detection decisions: accuracy, precision, recall, false positives, latency and cost.`}
+>
+  <section class="hero" aria-label="Overview">
+    <p class="eyebrow">Benchmark dashboard</p>
+    <h1>PhishNChips: {run.models} decision models on phishing detection</h1>
+    <p class="lede">
+      Each model judged the same {int(run.emails)} unique emails as phishing or legitimate. Compare how often they were right, what they missed, what they wrongly flagged, and what each decision cost.
+    </p>
+    <p class="note note-warn">
+      <strong>Run note.</strong> The run completed {int(run.completed)} of {int(run.expected)} decisions. One {failure?.model ?? "model"} decision remained rate-limited with HTTP 429 after retries, so its scores cover {int(run.emails - 1)} of {int(run.emails)} emails.
+    </p>
+    <p class="hero-meta">
+      <span>{run.models} models</span>
+      <span>{int(run.emails)} unique emails</span>
+      <span>{data.datasets.length} source sets</span>
+      <span>{int(run.completed)} decisions</span>
+    </p>
+  </section>
+
+  <noscript><p class="note note-warn">The charts and leaderboard need JavaScript. The dataset comparison table below still works without it.</p></noscript>
+
+  <nav class="section-nav" aria-label="On this page">
+    <a href="#overview">Overview</a>
+    <a href="#leaderboard">Leaderboard</a>
+    <a href="#certainty">Certainty</a>
+    <a href="#tradeoffs">Trade-offs</a>
+    <a href="#errors">Errors</a>
+    <a href="#inbox">Real inbox</a>
+    <a href="#datasets">All datasets</a>
+    <a href="#method">Method</a>
+    <a href="#reproduce">Reproduce</a>
+  </nav>
+
+  <div class="filter-panel dataset-panel">
+    <label>
+      <span>Dataset</span>
+      <select id="dataset-select">
+        {data.datasets.map((d) => <option value={d.id}>{d.label} ({int(d.emails)})</option>)}
+      </select>
+    </label>
+    <p class="dataset-summary" id="dataset-summary" aria-live="polite"></p>
+  </div>
+
+  <section class="block" id="overview" aria-labelledby="overview-title">
+    <div class="section-heading"><h2 id="overview-title">Overview</h2></div>
+    <div id="metrics" class="metric-grid" aria-live="polite"></div>
+    <h3 class="subheading">Best for</h3>
+    <p class="section-intro">The top model for each need on the selected dataset. Ties go to the more accurate model.</p>
+    <div class="table-wrap cards">
+      <table>
+        <caption class="sr-only">Best model for each need</caption>
+        <thead><tr><th scope="col">Need</th><th scope="col">Model</th><th scope="col" class="num">Result</th><th scope="col">Ties</th></tr></thead>
+        <tbody id="shortlist-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="block" id="leaderboard" aria-labelledby="leaderboard-title">
+    <div class="section-heading">
+      <h2 id="leaderboard-title">Leaderboard</h2>
+      <label class="chart-controls">
+        <span class="sr-only">Sort by</span>
+        <select id="sort-select" aria-label="Sort leaderboard by"></select>
+      </label>
+    </div>
+    <p class="section-intro">Sort with the column headers or the menu. Metrics that need both classes are hidden on single-class sets.</p>
+    <div class="table-wrap cards">
+      <table id="leaderboard-table">
+        <thead><tr id="leaderboard-head"></tr></thead>
+        <tbody id="leaderboard-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="block" id="certainty" aria-labelledby="certainty-title">
+    <div class="section-heading"><h2 id="certainty-title">How certain are the scores</h2></div>
+    <p class="section-intro">Each dot is a model's accuracy and the bar is its 95% interval: the range the true rate plausibly sits in given the number of emails. Gaps smaller than the intervals are within noise.</p>
+    <div class="chart-card">
+      <div class="scatter-wrap" id="interval-chart"></div>
+      <p class="readout" id="interval-readout" aria-live="polite"></p>
+      <p class="data-footnote" id="interval-note"></p>
+    </div>
+  </section>
+
+  <section class="block" id="tradeoffs" aria-labelledby="tradeoffs-title">
+    <div class="section-heading"><h2 id="tradeoffs-title">Trade-offs</h2></div>
+    <p class="section-intro">The dashed line joins the models nobody beats on both axes. Hover, focus or tap a point for its numbers.</p>
+    <div class="chart-grid">
+      <article class="chart-card">
+        <h3>Quality against cost and speed</h3>
+        <p class="sub-intro" id="tradeoff-hint"></p>
+        <div class="chart-controls">
+          <label>Horizontal axis
+            <select id="x-axis">
+              <option value="costPer1k">Cost per 1,000 decisions</option>
+              <option value="latencyMs">Mean latency</option>
+            </select>
+          </label>
+          <label>Vertical axis
+            <select id="y-axis"></select>
+          </label>
+        </div>
+        <div class="scatter-wrap" id="tradeoff-chart"></div>
+        <p class="readout" id="tradeoff-readout" aria-live="polite"></p>
+      </article>
+      <article class="chart-card">
+        <h3>Precision against recall</h3>
+        <p class="sub-intro">Up and to the right is better: fewer false alarms and fewer misses.</p>
+        <div class="scatter-wrap" id="pr-chart"></div>
+        <p class="readout" id="pr-readout" aria-live="polite"></p>
+      </article>
+    </div>
+  </section>
+
+  <section class="block" id="errors" aria-labelledby="errors-title">
+    <div class="section-heading">
+      <h2 id="errors-title">Where the errors fall</h2>
+      <label class="chart-controls">
+        <span class="sr-only">Sort by</span>
+        <select id="stack-sort" aria-label="Sort errors by"></select>
+      </label>
+    </div>
+    <p class="section-intro">Every decision lands in one of four outcomes. A missed phishing email lets an attack through; a false alarm blocks real mail and costs analyst time. Total errors is the two added together.</p>
+    <div class="chart-card">
+      <div class="legend" aria-hidden="true">
+        <span><span class="swatch seg-tp"></span>Phishing caught</span>
+        <span><span class="swatch seg-tn"></span>Legitimate passed</span>
+        <span><span class="swatch seg-fp"></span>False alarm</span>
+        <span><span class="swatch seg-fn"></span>Phishing missed</span>
+      </div>
+      <div id="stack-chart" class="stack-chart"></div>
+    </div>
+  </section>
+
+  <section class="block" id="inbox" aria-labelledby="inbox-title">
+    <div class="section-heading"><h2 id="inbox-title">In a real inbox</h2></div>
+    <p class="section-intro">
+      These test sets hold far more phishing than a real mailbox. Pick a realistic share of phishing and each model's recall and false-positive rate are scaled to it, showing how much of what it flags would really be phishing.
+    </p>
+    <div class="chart-card">
+      <div class="chart-controls">
+        <label class="inline">Phishing share of all email: <output id="prevalence-value">1%</output>
+          <input type="range" id="prevalence-range" min="0" max="7" step="1" value="2" aria-describedby="inbox-note" />
+        </label>
+      </div>
+      <div class="legend" aria-hidden="true">
+        <span><span class="swatch seg-estimate"></span>Estimated precision</span>
+        <span><span class="swatch seg-worst"></span>Worst case at the 95% false-positive upper bound</span>
+      </div>
+      <div id="inbox-chart" class="stack-chart"></div>
+      <p class="data-footnote" id="inbox-note">Precision is the share of flagged email that is really phishing. A model with no observed false positives can still have a small true rate, which is what the worst case allows for.</p>
+    </div>
+  </section>
+
+  <section class="block" id="datasets" aria-labelledby="datasets-title">
+    <div class="section-heading"><h2 id="datasets-title">Across every dataset</h2></div>
+    <p class="section-intro">
+      Accuracy per model on each source set. Phishing-only sets score the detection rate and the legitimate-only set scores the pass rate, so compare down a column, not across. Source sets overlap, so their rows are not added together.
+    </p>
+    <div class="table-wrap cards">
+      <table class="heat">
+        <caption class="sr-only">Accuracy by model and dataset</caption>
+        <thead>
+          <tr>
+            <th scope="col">Model</th>
+            {data.datasets.map((d) => (
+              <th scope="col" class="num">{d.label}<span class="sub">{int(d.emails)} emails, {kindLabel[d.kind as keyof typeof kindLabel]}</span></th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {heatModels.map((m) => (
+            <tr>
+              <th scope="row" class="model-name" data-label="Model">{m.model}</th>
+              {data.datasets.map((d) => {
+                const r = cell(d.id, m.model);
+                return <td class="heat-cell" style={`--heat:${r.accuracy ?? 0}`} data-label={`${d.label} (${metricNote[d.kind as keyof typeof metricNote]})`}>{pct(r.accuracy)}</td>;
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="block method" id="method" aria-labelledby="method-title">
+    <div class="section-heading"><h2 id="method-title">How to read this</h2></div>
+    <dl>
+      <dt>Precision and recall</dt>
+      <dd>Precision is the share of flagged emails that were phishing, so it measures how far an alert can be trusted. For a mail gateway or a cloud email security tool it comes first: every false alarm quarantines real mail or costs an analyst time, and real inboxes hold little phishing, so a model that is not precise buries the genuine attacks. Recall is the share of phishing that was flagged. A model can be precise yet miss most phishing, so read the two together. Precision here is measured with {pct(main.positives / main.emails, 0)} phishing in the test set. See "In a real inbox" for what it falls to at realistic volumes.</dd>
+      <dt>F1</dt>
+      <dd>One score that combines precision and recall. It sits closer to the lower of the two, so a model cannot score well by being strong on one and weak on the other. For example, 100% precision with 40% recall gives an F1 of only 57%. It is only shown on sets that contain both phishing and legitimate email, and it depends on the phishing share of the test set.</dd>
+      <dt>Accuracy</dt>
+      <dd>Share of decisions that were correct. On the main set {int(main.positives)} emails are phishing and {int(main.negatives)} are legitimate, so flagging everything would already score {pct(main.positives / main.emails, 0)}. It hides which kind of mistake was made, so it ranks below precision and recall.</dd>
+      <dt>False-positive rate</dt>
+      <dd>Share of legitimate emails wrongly flagged. Reported only where the set contains legitimate emails.</dd>
+      <dt>95% interval</dt>
+      <dd>The Wilson score interval around a rate. With 3,011 emails, scores a point or two apart often overlap and should not be read as a ranking.</dd>
+      <dt>Real-inbox precision</dt>
+      <dd>Precision recalculated from each model's recall and false-positive rate at a chosen share of phishing. Those two rates do not depend on the mix of the test set, but precision does.</dd>
+      <dt>Brier score</dt>
+      <dd>Mean squared error of the model's probability against the true label. Lower is better and rewards well-calibrated confidence.</dd>
+      <dt>Cost and latency</dt>
+      <dd>Cost is the reported spend divided by the decisions with cost data, scaled to 1,000 decisions. Latency is the mean time per decision.</dd>
+    </dl>
+    <p class="data-footnote">
+      Scores come from the {int(run.emails)}-email unique set plus its four source sets. The repeated all-emails rows in the raw export are identical to the main set and are counted once. Rates are recomputed from the confusion counts.
+    </p>
+  </section>
+
+  <section class="block method" id="reproduce" aria-labelledby="reproduce-title">
+    <div class="section-heading"><h2 id="reproduce-title">Method and reproduction</h2></div>
+    {method && (
+      <dl>
+        <dt>Data</dt>
+        <dd>
+          <a href="https://huggingface.co/datasets/AreLit/PhishNChips">PhishNChips</a> v5.2 at revision <code>{method.revision.slice(0, 7)}</code>: {int(method.sourceRows)} rows across four files, reduced to {int(method.included)} unique emails ({int(method.phishing)} phishing, {int(method.legitimate)} legitimate) after dropping {int(method.blank)} rows with a blank required field and {int(method.duplicates)} exact duplicates. The dataset's own labels are the ground truth and were not independently checked.
+        </dd>
+        <dt>Question</dt>
+        <dd>Each model answered one binary question, PHISHING or LEGITIMATE, with the same written definitions every time. This is not the PhishNChips baseline prompt, which asks whether to click a link. Only the sender, subject, body, link text and URL strings were sent, never the label, and no link was visited.</dd>
+        <dt>Run</dt>
+        <dd>One run of one prompt on {method.runDate}, through the OpenRouter decisions endpoint. The three Clef models were pinned to the Cloudflare provider with fallback off. Failed calls were retried up to three times. Latency is client-observed and includes retries. Cost is what OpenRouter reported per decision.</dd>
+        <dt>Limits</dt>
+        <dd>Hosted models change, so a repeat run can differ. The main set holds twice as much phishing as legitimate email, so use the core set for a balanced comparison. Cost and latency depend on routing and load on the day.</dd>
+      </dl>
+    )}
+    <p>The scripts, the recorded predictions (without email text) and step-by-step instructions are in the <a href="https://github.com/emdashcyber/phishnchips-decision-models" rel="noopener noreferrer">project repository</a>. You can reproduce the results at three levels:</p>
+    <pre><code>python3 eval/summarize_results.py --check   # rebuild every score from the recorded predictions
+python3 eval/prepare_data.py                # rebuild the {int(method?.included ?? 0)}-email corpus from the pinned files
+python3 eval/run_models.py --run-models --confirm-send   # repeat the run (needs OPENROUTER_API_KEY, costs money)</code></pre>
+  </section>
+
+  <script src="../scripts/dashboard.js"></script>
+</Base>

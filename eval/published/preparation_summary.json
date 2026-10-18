@@ -1,0 +1,111 @@
+{
+  "created_at_utc": "2026-10-18T13:48:29+00:00",
+  "sources": [
+    {
+      "dataset": "PhishNChips",
+      "file": "core_emails.csv",
+      "revision": "89afcc39610084298c4679159cb2e27d9ffffa46",
+      "sha256": "cebb407ff8630491a97400e37464b8db8dfc4299164fca51fcb4ac7eec8204ef",
+      "rows": 2000,
+      "parser": "phishnchips"
+    },
+    {
+      "dataset": "PhishNChips",
+      "file": "cross_domain_legitimate_v5.csv",
+      "revision": "89afcc39610084298c4679159cb2e27d9ffffa46",
+      "sha256": "66df80e116bbb431b5374b381eba490df858be785a00d5e1fdf91e22bd34393c",
+      "rows": 333,
+      "parser": "phishnchips"
+    },
+    {
+      "dataset": "PhishNChips",
+      "file": "infrastructure_phishing_expanded.csv",
+      "revision": "89afcc39610084298c4679159cb2e27d9ffffa46",
+      "sha256": "839c02c0daf5e78724416b42ba95d3962cb483a01b7df13af3de1e5590a1ce71",
+      "rows": 54,
+      "parser": "phishnchips"
+    },
+    {
+      "dataset": "PhishNChips",
+      "file": "real_phishing_validation.csv",
+      "revision": "89afcc39610084298c4679159cb2e27d9ffffa46",
+      "sha256": "60131198553e6346496af955937dddeb7c7592e31dd56c0579542017d48ce196",
+      "rows": 1000,
+      "parser": "phishnchips"
+    }
+  ],
+  "source_summary": [
+    {
+      "dataset": "PhishNChips",
+      "file": "core_emails.csv",
+      "counts": {
+        "included:LEGITIMATE": 1000,
+        "included:PHISHING": 1000
+      },
+      "unique_message_memberships": 2000
+    },
+    {
+      "dataset": "PhishNChips",
+      "file": "cross_domain_legitimate_v5.csv",
+      "counts": {
+        "exact_duplicate:LEGITIMATE": 333
+      },
+      "unique_message_memberships": 333
+    },
+    {
+      "dataset": "PhishNChips",
+      "file": "infrastructure_phishing_expanded.csv",
+      "counts": {
+        "included:PHISHING": 54
+      },
+      "unique_message_memberships": 54
+    },
+    {
+      "dataset": "PhishNChips",
+      "file": "real_phishing_validation.csv",
+      "counts": {
+        "blank_required_field:PHISHING": 2,
+        "exact_duplicate:PHISHING": 41,
+        "included:PHISHING": 957
+      },
+      "unique_message_memberships": 998
+    }
+  ],
+  "total_source_rows": 3387,
+  "included_rows": 3011,
+  "included_label_counts": {
+    "LEGITIMATE": 1000,
+    "PHISHING": 2011
+  },
+  "unique_email_memberships_by_source": {
+    "PhishNChips/core_emails.csv": 2000,
+    "PhishNChips/cross_domain_legitimate_v5.csv": 333,
+    "PhishNChips/infrastructure_phishing_expanded.csv": 54,
+    "PhishNChips/real_phishing_validation.csv": 998
+  },
+  "excluded_blank_required_field": 2,
+  "excluded_invalid_label": 0,
+  "excluded_exact_duplicates": 374,
+  "excluded_label_conflict_duplicates": 0,
+  "prepared_file_sha256": "8265d2aeec973f954bfae6478d4b2a9db17399080eaba167596a532e45e34db3",
+  "prepared_file": "data/prepared_emails.csv",
+  "input_fields_sent": [
+    "sender",
+    "subject",
+    "body",
+    "link_display_text",
+    "link_urls"
+  ],
+  "input_fields_excluded": [
+    "phish_label",
+    "id",
+    "source_dataset",
+    "source_file",
+    "source_row",
+    "url_raw",
+    "strategy",
+    "url_category",
+    "datasource",
+    "model_used"
+  ]
+}

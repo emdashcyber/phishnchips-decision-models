@@ -1,0 +1,18 @@
+---
+import Base from "../layouts/Base.astro";
+
+const base = import.meta.env.BASE_URL;
+---
+
+<Base
+  title="Page not found | PhishNChips decision models | EmDash Cyber"
+  description="This PhishNChips decision models page does not exist."
+  indexable={false}
+>
+  <section class="hero" aria-labelledby="not-found-title">
+    <p class="eyebrow">404</p>
+    <h1 id="not-found-title">Page not found</h1>
+    <p class="lede">The page you requested could not be found.</p>
+    <p><a href={base}>Back to the dashboard</a></p>
+  </section>
+</Base>

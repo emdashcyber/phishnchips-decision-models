@@ -1,0 +1,10 @@
+.DS_Store
+node_modules/
+dist/
+.astro/
+site/src/data/results.json
+eval/source_data/
+eval/data/
+eval/results/
+__pycache__/
+*.py[cod]
