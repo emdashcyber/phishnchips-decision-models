@@ -27,6 +27,8 @@ const columnLabel = (key, kind) => {
   if (key === "accuracy") return kind === "phishing" ? "Detection rate" : kind === "legitimate" ? "Pass rate" : "Accuracy";
   return key === "model" ? "Model" : METRICS[key].label;
 };
+// Short headings keep the table inside the page width; the full name stays in the tooltip.
+const SHORT_HEADINGS = { fpr: "FP rate", brier: "Brier", latencyMs: "Latency", costPer1k: "Cost / 1,000" };
 const TABLE_KEYS = ["precision", "accuracy", "recall", "f1", "fpr", "brier", "latencyMs", "costPer1k"];
 const Y_KEYS = ["precision", "accuracy", "recall", "f1", "fpr", "brier"];
 
@@ -74,8 +76,10 @@ function renderLeaderboard() {
     const th = el("th", key === "model" ? "" : "num");
     th.scope = "col";
     if (state.sort === key) th.setAttribute("aria-sort", state.direction === "asc" ? "ascending" : "descending");
-    const button = el("button", "", columnLabel(key, d.kind));
+    const button = el("button", "", SHORT_HEADINGS[key] ?? columnLabel(key, d.kind));
     button.type = "button";
+    button.title = columnLabel(key, d.kind);
+    button.setAttribute("aria-label", `Sort by ${columnLabel(key, d.kind).toLowerCase()}`);
     button.addEventListener("click", () => {
       state.direction = state.sort === key ? (state.direction === "asc" ? "desc" : "asc") : key === "model" ? "asc" : defaultDirection(key);
       state.sort = key;

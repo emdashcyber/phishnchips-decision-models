@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Download, normalize, deduplicate, and audit the fresh evaluation corpus.
 
-Raw and prepared email text is kept under fresh_eval/ and git-ignored. No
+Raw and prepared email text is kept under eval/ and git-ignored. No
 message text is printed, written to the preparation manifest, or sent to a
 provider by this script.
 """

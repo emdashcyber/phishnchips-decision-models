@@ -197,6 +197,9 @@ th button {
   text-transform: inherit; letter-spacing: inherit; display: inline-flex; align-items: center; gap: 0.3rem;
 }
 th button:hover { color: var(--text); }
+#leaderboard-table th { white-space: normal; vertical-align: bottom; line-height: 1.35; padding-inline: 0.6rem; }
+#leaderboard-table td { padding-inline: 0.6rem; }
+#leaderboard-table th button { text-align: inherit; }
 th[aria-sort="ascending"] button::after { content: "\2191"; }
 th[aria-sort="descending"] button::after { content: "\2193"; }
 th[aria-sort] { color: var(--text); }
@@ -214,7 +217,7 @@ th.num { text-align: right; }
 .status-pill.warn { background: var(--warn-soft); color: var(--warn); }
 
 /* Bars */
-.bar-cell { display: grid; grid-template-columns: minmax(4rem, 1fr) auto; align-items: center; gap: 0.6rem; min-width: 10rem; }
+.bar-cell { display: grid; grid-template-columns: minmax(4rem, 1fr) auto; align-items: center; gap: 0.6rem; min-width: 9rem; }
 .bar-track { height: 0.6rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
 .bar-fill { height: 100%; border-radius: 999px; background: var(--accent); }
 .bar-value { font: 0.85rem var(--font-mono); text-align: right; min-width: 3.6rem; }

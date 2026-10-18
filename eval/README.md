@@ -2,7 +2,7 @@
 
 Everything needed to check, or repeat, the run behind the dashboard. Python 3.10 or later and the standard library are enough; nothing needs installing.
 
-The scripts come from the `fresh_eval` folder of [emdashcyber/phishing-detection-decision-models](https://github.com/emdashcyber/phishing-detection-decision-models/tree/codex/fresh-eval-cloud-run/fresh_eval) (branch `codex/fresh-eval-cloud-run`, commit `58058f8`). Changes from that copy:
+These scripts were written for the original evaluation run. Changes made when they were added to this repository:
 
 - The model name "OpenAI Decisions (GPT-6 Luna Decisions)" is shortened to "GPT-6 Luna Decisions" in the scripts and recorded files. The model ID is unchanged.
 - `write_summaries()` in `run_models.py` takes an optional output path, so `summarize_results.py` can reuse it.
