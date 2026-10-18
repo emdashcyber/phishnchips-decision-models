@@ -10,6 +10,15 @@ const failure = run.failures[0];
 const heatModels = sortRows(data.results.all, "accuracy");
 const cell = (id: string, model: string) => data.results[id as keyof typeof data.results].find((r) => r.model === model)!;
 const kindLabel = { mixed: "both classes", phishing: "phishing only", legitimate: "legitimate only" } as const;
+// Short column headings keep the heatmap inside the page width; the full label is read out by screen readers.
+const shortLabel: Record<string, string> = {
+  all: "All unique",
+  core: "Core",
+  "cross-domain-legitimate": "Cross-domain",
+  "infrastructure-phishing": "Infrastructure",
+  "real-phishing": "Real phishing",
+};
+const kindShort = { mixed: "both", phishing: "phishing", legitimate: "legit." } as const;
 const metricNote = { mixed: "accuracy", phishing: "detection rate", legitimate: "pass rate" } as const;
 ---
 <Base
@@ -180,7 +189,11 @@ const metricNote = { mixed: "accuracy", phishing: "detection rate", legitimate: 
           <tr>
             <th scope="col">Model</th>
             {data.datasets.map((d) => (
-              <th scope="col" class="num">{d.label}<span class="sub">{int(d.emails)} emails, {kindLabel[d.kind as keyof typeof kindLabel]}</span></th>
+              <th scope="col" class="num" title={`${d.label}: ${int(d.emails)} emails, ${kindLabel[d.kind as keyof typeof kindLabel]}`}>
+                <span aria-hidden="true">{shortLabel[d.id] ?? d.label}</span>
+                <span class="sr-only">{d.label}, {int(d.emails)} emails, {kindLabel[d.kind as keyof typeof kindLabel]}</span>
+                <span class="sub" aria-hidden="true">{int(d.emails)} · {kindShort[d.kind as keyof typeof kindShort]}</span>
+              </th>
             ))}
           </tr>
         </thead>

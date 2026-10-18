@@ -248,6 +248,9 @@ output { font-family: var(--font-mono); color: var(--text); font-weight: 650; }
 /* Heatmap */
 .heat td.heat-cell { text-align: center; font: 0.85rem var(--font-mono); background: color-mix(in srgb, var(--accent) calc(var(--heat, 0) * 38%), transparent); }
 .heat .sub { font-weight: 400; text-transform: none; letter-spacing: 0; display: block; margin-top: 0.15rem; white-space: normal; }
+.heat th { white-space: normal; vertical-align: bottom; line-height: 1.35; padding-inline: 0.6rem; }
+.heat .model-name { overflow-wrap: normal; white-space: nowrap; }
+.heat td.heat-cell { padding-inline: 0.5rem; }
 
 /* Scatter */
 .scatter-wrap { position: relative; }
@@ -298,6 +301,7 @@ pre code { font-size: inherit; }
     letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.1rem;
   }
   .cards .rank { display: none; }
+  .heat .model-name { white-space: normal; }
   .cards tbody th { display: block; padding: 0.6rem 0.9rem 0.2rem; border: 0; background: transparent; font: 650 0.95rem var(--font-sans); letter-spacing: 0; text-transform: none; color: var(--text); white-space: normal; }
 }
 
