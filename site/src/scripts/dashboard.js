@@ -290,13 +290,18 @@ function renderShortlist() {
     const need = el("th", "", item.need);
     need.scope = "row";
     need.dataset.label = "Need";
-    const model = el("td", "model-name", item.model);
+    const model = el("td", "model-name");
     model.dataset.label = "Model";
+    if (item.models.length > 1) {
+      const names = el("ul", "shortlist-models");
+      for (const name of item.models) names.append(el("li", "", name));
+      model.append(names);
+    } else {
+      model.textContent = item.model;
+    }
     const result = el("td", "num", item.value);
     result.dataset.label = columnLabel(item.key, current().kind);
-    const ties = el("td", "", item.tied ? `+${item.tied} tied` : "");
-    ties.dataset.label = "Ties";
-    tr.append(need, model, result, ties);
+    tr.append(need, model, result);
     body.append(tr);
   }
 }

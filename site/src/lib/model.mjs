@@ -238,11 +238,15 @@ const NEEDS = [
   ["Probability quality", "brier"],
 ];
 
-// One winner per need; ties go to the more accurate model and the tie count is reported.
+// List every top-precision model in precision then recall order; other needs show their single leader.
 export function shortlist(rows, kind) {
   const usable = availableMetrics(kind);
   return NEEDS.filter(([, key]) => usable.includes(key)).map(([need, key]) => {
     const { value, rows: tied } = best(rows, key);
-    return { need, key, model: sortRows(tied, "accuracy", "desc")[0].model, value: METRICS[key].format(value), tied: tied.length - 1 };
+    const ordered = key === "precision"
+      ? [...tied].sort((a, b) => b.precision - a.precision || b.recall - a.recall || a.model.localeCompare(b.model))
+      : sortRows(tied, "accuracy", "desc").slice(0, 1);
+    const models = key === "precision" ? ordered.map((row) => row.model) : [ordered[0].model];
+    return { need, key, model: models[0], models, value: METRICS[key].format(value), tied: tied.length - 1 };
   });
 }

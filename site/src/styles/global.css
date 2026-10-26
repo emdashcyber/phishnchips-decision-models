@@ -208,6 +208,7 @@ th.num { text-align: right; }
 .na { color: var(--muted); }
 .rank { font: 0.78rem var(--font-mono); color: var(--muted); width: 2rem; }
 .model-name { font-weight: 650; overflow-wrap: anywhere; }
+.shortlist-models { display: grid; gap: 0.15rem; list-style: none; margin: 0; padding: 0; }
 .model-id { display: block; font: 0.72rem var(--font-mono); color: var(--muted); font-weight: 400; }
 .status-pill {
   display: inline-block; font-size: 0.72rem; line-height: 1.4; font-weight: 600;
