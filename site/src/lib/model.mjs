@@ -73,10 +73,6 @@ export function highlights(rows, dataset) {
     foot: names(accuracy.rows),
     tone: "good",
   });
-  if (dataset.kind === "mixed") {
-    const f1 = best(rows, "f1");
-    items.push({ label: "Best F1", value: pct(f1.value), foot: names(f1.rows), tone: "good" });
-  }
   if (dataset.kind !== "phishing") {
     const clean = rows.filter((r) => r.fp === 0);
     items.push({
@@ -88,14 +84,6 @@ export function highlights(rows, dataset) {
   }
   items.push({ label: "Lowest cost per 1,000", value: usd(cost.value), foot: names(cost.rows), tone: "" });
   items.push({ label: "Fastest mean latency", value: ms(speed.value), foot: names(speed.rows), tone: "" });
-  const completed = rows.reduce((sum, r) => sum + r.completed, 0);
-  const expected = rows.reduce((sum, r) => sum + r.expected, 0);
-  items.push({
-    label: "Decisions completed",
-    value: `${int(completed)} / ${int(expected)}`,
-    foot: completed === expected ? "no failed decisions" : `${int(expected - completed)} failed after retries`,
-    tone: completed === expected ? "" : "warn",
-  });
   return items;
 }
 

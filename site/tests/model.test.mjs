@@ -33,8 +33,8 @@ test("highlights describe the main set", () => {
   const byLabel = Object.fromEntries(items.map((i) => [i.label, i]));
   assert.equal(byLabel["Best accuracy"].foot, "Clef");
   assert.equal(byLabel["Zero false positives"].value, "5 of 12");
-  assert.equal(byLabel["Decisions completed"].value, "36,131 / 36,132");
-  assert.equal(byLabel["Decisions completed"].tone, "warn");
+  assert.ok(!("Best F1" in byLabel));
+  assert.ok(!("Decisions completed" in byLabel));
 });
 
 test("single-class sets drop metrics that need both classes", () => {

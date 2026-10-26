@@ -81,13 +81,20 @@ test('sitemap lists the home page and internal links resolve', () => {
   }
 });
 
-test('dashboard shell and run note are rendered into the page', () => {
+test('dashboard shell is rendered without the run note', () => {
   const html = read('index.html');
   for (const id of ['dataset-select', 'metrics', 'shortlist-body', 'leaderboard-table', 'interval-chart', 'tradeoff-chart', 'pr-chart', 'stack-chart', 'inbox-chart', 'prevalence-range']) {
     assert.ok(html.includes(`id="${id}"`), id);
   }
-  assert.ok(html.includes('36,131 of 36,132 decisions'));
-  assert.ok(html.includes('HTTP 429'));
+  const scripts = [...html.matchAll(/<script\b[^>]*src="([^"]+)"[^>]*>/g)]
+    .map(([, src]) => readFileSync(deployedFile(src), 'utf8'))
+    .join('\n');
+  assert.ok(!html.includes('Run note.'));
+  assert.ok(!html.includes('36,131 of 36,132 decisions'));
+  assert.ok(!html.includes('HTTP 429'));
+  assert.ok(html.includes('36,131 decisions'));
+  assert.ok(!scripts.includes('Best F1'));
+  assert.ok(!scripts.includes('Decisions completed'));
   assert.equal([...html.matchAll(/<option value="/g)].length >= 5, true);
 });
 
