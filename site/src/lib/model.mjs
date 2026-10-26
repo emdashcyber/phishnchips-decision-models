@@ -232,9 +232,7 @@ export function sortByErrors(rows, key = "total") {
 
 const NEEDS = [
   ["Trusted alerts", "precision"],
-  ["Fewest errors", "accuracy"],
   ["Catching phishing", "recall"],
-  ["Avoiding false alarms", "fpr"],
   ["Speed", "latencyMs"],
   ["Lowest cost", "costPer1k"],
   ["Probability quality", "brier"],

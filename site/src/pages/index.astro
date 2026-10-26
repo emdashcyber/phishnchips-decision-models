@@ -43,10 +43,10 @@ const metricNote = { mixed: "accuracy", phishing: "detection rate", legitimate: 
   <nav class="section-nav" aria-label="On this page">
     <a href="#overview">Overview</a>
     <a href="#leaderboard">Leaderboard</a>
+    <a href="#inbox">Real inbox</a>
     <a href="#certainty">Certainty</a>
     <a href="#tradeoffs">Trade-offs</a>
     <a href="#errors">Errors</a>
-    <a href="#inbox">Real inbox</a>
     <a href="#datasets">All datasets</a>
     <a href="#method">Method</a>
     <a href="#reproduce">Reproduce</a>
@@ -90,6 +90,26 @@ const metricNote = { mixed: "accuracy", phishing: "detection rate", legitimate: 
         <thead><tr id="leaderboard-head"></tr></thead>
         <tbody id="leaderboard-body"></tbody>
       </table>
+    </div>
+  </section>
+
+  <section class="block" id="inbox" aria-labelledby="inbox-title">
+    <div class="section-heading"><h2 id="inbox-title">In a real inbox</h2></div>
+    <p class="section-intro">
+      These test sets hold far more phishing than a real mailbox. Pick a realistic share of phishing and each model's recall and false-positive rate are scaled to it, showing how much of what it flags would really be phishing.
+    </p>
+    <div class="chart-card">
+      <div class="chart-controls">
+        <label class="inline">Phishing share of all email: <output id="prevalence-value">1%</output>
+          <input type="range" id="prevalence-range" min="0" max="7" step="1" value="2" aria-describedby="inbox-note" />
+        </label>
+      </div>
+      <div class="legend" aria-hidden="true">
+        <span><span class="swatch seg-estimate"></span>Estimated precision</span>
+        <span><span class="swatch seg-worst"></span>Worst case at the 95% false-positive upper bound</span>
+      </div>
+      <div id="inbox-chart" class="stack-chart"></div>
+      <p class="data-footnote" id="inbox-note">Precision is the share of flagged email that is really phishing. A model with no observed false positives can still have a small true rate, which is what the worst case allows for.</p>
     </div>
   </section>
 
@@ -150,26 +170,6 @@ const metricNote = { mixed: "accuracy", phishing: "detection rate", legitimate: 
         <span><span class="swatch seg-fn"></span>Phishing missed</span>
       </div>
       <div id="stack-chart" class="stack-chart"></div>
-    </div>
-  </section>
-
-  <section class="block" id="inbox" aria-labelledby="inbox-title">
-    <div class="section-heading"><h2 id="inbox-title">In a real inbox</h2></div>
-    <p class="section-intro">
-      These test sets hold far more phishing than a real mailbox. Pick a realistic share of phishing and each model's recall and false-positive rate are scaled to it, showing how much of what it flags would really be phishing.
-    </p>
-    <div class="chart-card">
-      <div class="chart-controls">
-        <label class="inline">Phishing share of all email: <output id="prevalence-value">1%</output>
-          <input type="range" id="prevalence-range" min="0" max="7" step="1" value="2" aria-describedby="inbox-note" />
-        </label>
-      </div>
-      <div class="legend" aria-hidden="true">
-        <span><span class="swatch seg-estimate"></span>Estimated precision</span>
-        <span><span class="swatch seg-worst"></span>Worst case at the 95% false-positive upper bound</span>
-      </div>
-      <div id="inbox-chart" class="stack-chart"></div>
-      <p class="data-footnote" id="inbox-note">Precision is the share of flagged email that is really phishing. A model with no observed false positives can still have a small true rate, which is what the worst case allows for.</p>
     </div>
   </section>
 

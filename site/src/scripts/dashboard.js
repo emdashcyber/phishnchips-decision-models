@@ -98,7 +98,14 @@ function renderLeaderboard() {
     const nameCell = el("td");
     nameCell.dataset.label = "Model";
     nameCell.append(el("span", "model-name", row.model), el("span", "model-id", modelId.get(row.model)));
-    if (row.failed > 0) nameCell.append(el("span", "status-pill warn", `${row.failed} failed after retries`));
+    if (row.failed > 0) {
+      const failure = el("span", "status-pill warn", `${row.failed} failed after retries`);
+      const explanation = "The failed decision had 3 attempts: the initial request plus 2 retries. All 3 returned HTTP 429, so it was marked failed.";
+      failure.title = explanation;
+      failure.tabIndex = 0;
+      failure.setAttribute("aria-label", `${row.failed} failed after retries. ${explanation}`);
+      nameCell.append(failure);
+    }
     tr.append(nameCell);
     for (const key of keys) {
       if (key !== keys[0]) {

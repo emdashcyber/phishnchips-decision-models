@@ -113,11 +113,14 @@ test("inboxOutcome scales precision to a rarer phishing share", () => {
 });
 
 test("shortlist names one winner per need and reports ties", () => {
-  const list = Object.fromEntries(shortlist(rows, "mixed").map((i) => [i.need, i]));
-  assert.equal(list["Fewest errors"].model, "Clef");
+  const items = shortlist(rows, "mixed");
+  const needs = items.map((i) => i.need);
+  const list = Object.fromEntries(items.map((i) => [i.need, i]));
+  assert.deepEqual(needs, ["Trusted alerts", "Catching phishing", "Speed", "Lowest cost", "Probability quality"]);
+  assert.ok(!needs.includes("Fewest errors"));
+  assert.ok(!needs.includes("Avoiding false alarms"));
   assert.equal(list["Catching phishing"].model, "Clef");
-  assert.equal(list["Avoiding false alarms"].model, "Jev 1.14");
-  assert.equal(list["Avoiding false alarms"].tied, 4);
+  assert.equal(list["Trusted alerts"].tied, 4);
   assert.equal(list["Lowest cost"].model, "Decider Flash V1.2");
   assert.equal(shortlist(data.results["real-phishing"], "phishing").some((i) => i.need === "Avoiding false alarms"), false);
 });
@@ -128,7 +131,7 @@ test("rankInbox splits models tied at 100% precision by their worst case", () =>
   assert.equal(ranked.at(-1), "Clef");
 });
 
-test("precision comes before accuracy in cards, shortlist and metric order", () => {
+test("precision comes before accuracy in cards and metric order", () => {
   const labels = highlights(rows, data.datasets[0]).map((i) => i.label);
   assert.ok(labels.indexOf("Best precision") !== -1 && labels.indexOf("Best precision") < labels.indexOf("Best accuracy"));
   const card = highlights(rows, data.datasets[0]).find((i) => i.label === "Best precision");
@@ -136,7 +139,6 @@ test("precision comes before accuracy in cards, shortlist and metric order", () 
   assert.equal(card.foot, "Jev 1.14 and 4 tied");
   const needs = shortlist(rows, "mixed").map((i) => i.need);
   assert.equal(needs[0], "Trusted alerts");
-  assert.ok(needs.indexOf("Trusted alerts") < needs.indexOf("Fewest errors"));
   assert.ok(availableMetrics("mixed").indexOf("precision") < availableMetrics("mixed").indexOf("accuracy"));
   const single = data.datasets.find((d) => d.kind === "phishing");
   assert.ok(!highlights(data.results[single.id], single).some((i) => i.label === "Best precision"));
