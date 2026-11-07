@@ -16,7 +16,7 @@
     "pretest": "npm run prepare-data",
     "test": "node --check src/scripts/dashboard.js && node --test tests/model.test.mjs tests/prepare-data.test.mjs tests/navigation.test.mjs",
     "verify": "node --test tests/verify-build.mjs",
-    "check": "npm test && npm run build && npm run verify"
+    "check": "npm run prepare-data && npm test && npm run build && npm run verify"
   },
   "dependencies": {
     "astro": "^7.3.5"

@@ -37,7 +37,7 @@ Requires Node 22.12 or later.
 
 ```sh
 cd site
-npm install
+npm ci
 npm run dev      # http://localhost:4321/phishnchips-decision-models/
 npm run check    # tests, build and build verification
 ```
@@ -45,3 +45,16 @@ npm run check    # tests, build and build verification
 ## Publishing
 
 `.github/workflows/publish-pages.yml` builds and deploys `site/dist` to GitHub Pages. Set Pages to deploy from GitHub Actions in the repository settings. The page is served at `https://emdashcyber.com/phishnchips-decision-models/`.
+
+## Repeatable validation
+
+From the repository root, use the Node major in `.node-version`:
+
+```sh
+npm --prefix site ci
+npm --prefix site run check
+```
+
+This is the same test/build/verification command used for PRs and publication. It prepares ignored `site/src/data/results.json` from the committed aggregate data and generates ignored `site/dist` and Astro caches. It needs no API keys, prediction artifacts or model calls. Corpus preparation, model evaluation and recorded-result comparison remain explicit research workflows described above.
+
+The consolidated check explicitly prepares data, including when npm lifecycle hooks are disabled locally.
