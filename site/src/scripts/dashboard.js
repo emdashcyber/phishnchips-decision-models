@@ -1,11 +1,54 @@
 import data from "../data/results.json";
 import { METRICS, PREVALENCES, accuracyInterval, availableMetrics, defaultDirection, highlights, indistinguishable, int, logTicks, niceDomain, paretoFront, pct, placeLabels, rankInbox, shortlist, sortByErrors, sortRows, ticks } from "../lib/model.mjs";
 
+import { defaults, TABLE_KEYS, Y_KEYS, normalizeView, parseView, viewURL } from "../lib/view-state.mjs";
+
 const SVG_NS = "http://www.w3.org/2000/svg";
 const $ = (id) => document.getElementById(id);
 const datasets = new Map(data.datasets.map((d) => [d.id, d]));
 const modelId = new Map(data.models.map((m) => [m.name, m.id]));
-const state = { dataset: "all", sort: "precision", direction: "desc", x: "costPer1k", y: "precision", prevalence: 2, errors: "total" };
+let state = parseView(new URL(window.location.href).searchParams, data.datasets);
+const mobile = window.matchMedia("(max-width: 860px)");
+
+function writeURL(replace = false) {
+  const url = viewURL(window.location.href, state);
+  if (url !== window.location.pathname + window.location.search + window.location.hash) {
+    window.history[replace ? "replaceState" : "pushState"](null, "", url);
+  }
+}
+function announce() {
+  $("view-status").textContent = `${current().label}. ${rows().length} models, sorted by ${columnLabel(state.sort, current().kind).toLowerCase()}, ${state.direction === "asc" ? "ascending" : "descending"}. ${pct(state.prevalence, state.prevalence < 0.01 ? 1 : 0)} phishing prevalence. Chart: ${columnLabel(state.x, current().kind).toLowerCase()} versus ${columnLabel(state.y, current().kind).toLowerCase()}. Errors: ${state.errors === "fn" ? "missed phishing" : state.errors === "fp" ? "false alarms" : "total"}.`;
+}
+function changeView(patch, replace = false, draw = render) {
+  state = normalizeView({ ...state, ...patch }, data.datasets);
+  draw();
+  writeURL(replace);
+  announce();
+}
+// Keep select nodes and their options stable unless the dataset changes their choices.
+function setOptions(select, options, value) {
+  const signature = JSON.stringify(options);
+  if (select.dataset.options !== signature) {
+    select.replaceChildren(...options.map(([key, label]) => new Option(label, key)));
+    select.dataset.options = signature;
+  }
+  select.value = value;
+}
+function focusedModel(host) {
+  return host.contains(document.activeElement) ? document.activeElement.dataset.model : null;
+}
+function restorePoint(host, model) {
+  if (!model) return;
+  const point = [...host.querySelectorAll("[data-model]")].find(node => node.dataset.model === model);
+  if (point) point.focus({ preventScroll: true });
+  else $("dataset-select").focus({ preventScroll: true });
+}
+function headerTabStops() {
+  for (const button of $("leaderboard-head").querySelectorAll("button")) {
+    button.tabIndex = mobile.matches ? -1 : 0;
+    if (mobile.matches && document.activeElement === button) $("sort-select").focus({ preventScroll: true });
+  }
+}
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -29,8 +72,6 @@ const columnLabel = (key, kind) => {
 };
 // Short headings keep the table inside the page width; the full name stays in the tooltip.
 const SHORT_HEADINGS = { fpr: "FP rate", brier: "Brier", latencyMs: "Latency", costPer1k: "Cost / 1,000" };
-const TABLE_KEYS = ["precision", "accuracy", "recall", "f1", "fpr", "brier", "latencyMs", "costPer1k"];
-const Y_KEYS = ["precision", "accuracy", "recall", "f1", "fpr", "brier"];
 
 function renderSummary() {
   const d = current();
@@ -61,33 +102,33 @@ function valueCell(row, key, label) {
 function renderLeaderboard() {
   const d = current();
   const keys = TABLE_KEYS.filter((k) => availableMetrics(d.kind).includes(k));
-  if (!keys.includes(state.sort) && state.sort !== "model") {
-    state.sort = "accuracy";
-    state.direction = defaultDirection("accuracy");
-  }
-
-  const select = $("sort-select");
-  select.replaceChildren();
-  for (const key of ["model", ...keys]) select.append(new Option(`Sort by ${columnLabel(key, d.kind).toLowerCase()}`, key, false, key === state.sort));
-
+  setOptions($("sort-select"), ["model", ...keys].map(key => [key, `Sort by ${columnLabel(key, d.kind).toLowerCase()}`]), state.sort);
+  $("sort-direction").value = state.direction;
   const head = $("leaderboard-head");
-  head.replaceChildren(Object.assign(el("th", "rank", "#"), { scope: "col" }));
-  for (const key of ["model", ...keys]) {
-    const th = el("th", key === "model" ? "" : "num");
-    th.scope = "col";
-    if (state.sort === key) th.setAttribute("aria-sort", state.direction === "asc" ? "ascending" : "descending");
-    const button = el("button", "", SHORT_HEADINGS[key] ?? columnLabel(key, d.kind));
-    button.type = "button";
-    button.title = columnLabel(key, d.kind);
-    button.setAttribute("aria-label", `Sort by ${columnLabel(key, d.kind).toLowerCase()}`);
-    button.addEventListener("click", () => {
-      state.direction = state.sort === key ? (state.direction === "asc" ? "desc" : "asc") : key === "model" ? "asc" : defaultDirection(key);
-      state.sort = key;
-      renderLeaderboard();
-    });
-    th.append(button);
-    head.append(th);
+  if (head.dataset.kind !== d.kind) {
+    head.dataset.kind = d.kind;
+    head.replaceChildren(Object.assign(el("th", "rank", "#"), { scope: "col" }));
+    for (const key of ["model", ...keys]) {
+      const th = el("th", key === "model" ? "" : "num");
+      th.scope = "col";
+      th.dataset.key = key;
+      const button = el("button", "", SHORT_HEADINGS[key] ?? columnLabel(key, d.kind));
+      button.type = "button";
+      button.title = columnLabel(key, d.kind);
+      button.setAttribute("aria-label", `Sort by ${columnLabel(key, d.kind).toLowerCase()}`);
+      button.addEventListener("click", () => {
+        const direction = state.sort === key ? (state.direction === "asc" ? "desc" : "asc") : key === "model" ? "asc" : defaultDirection(key);
+        changeView({ sort: key, direction }, false, renderLeaderboard);
+      });
+      th.append(button);
+      head.append(th);
+    }
   }
+  for (const th of head.children) {
+    if (th.dataset.key === state.sort) th.setAttribute("aria-sort", state.direction === "asc" ? "ascending" : "descending");
+    else th.removeAttribute("aria-sort");
+  }
+  headerTabStops();
 
   const sorted = sortRows(rows(), state.sort, state.direction);
   const body = $("leaderboard-body");
@@ -141,11 +182,13 @@ function formatTicks(metric, domain) {
 }
 
 function drawScatter(host, readout, { points, xMetric, yMetric }) {
+  const focused = focusedModel(host);
   host.replaceChildren();
   readout.textContent = "";
   const usable = points.filter((p) => p.x !== null && p.y !== null);
   if (usable.length < 2) {
     host.append(el("p", "message-state", "Not enough data for this view on the selected dataset."));
+    restorePoint(host, focused);
     return;
   }
   const width = Math.max(300, Math.floor(host.clientWidth || 600));
@@ -208,6 +251,7 @@ function drawScatter(host, readout, { points, xMetric, yMetric }) {
     const detail = `${p.label}: ${columnLabel(xMetric, "mixed").toLowerCase()} ${METRICS[xMetric].format(p.source.x)}, ${columnLabel(yMetric, "mixed").toLowerCase()} ${METRICS[yMetric].format(p.source.y)}`;
     const group = svgEl("g", {}, "pt");
     const dot = svgEl("circle", { cx: p.x, cy: p.y, r: 6.5, tabindex: 0, role: "img", "aria-label": detail }, onFront.has(p.label) ? "dot on-front" : "dot");
+    dot.dataset.model = modelId.get(p.label) || p.label;
     const show = () => { readout.textContent = detail; };
     dot.addEventListener("pointerenter", show);
     dot.addEventListener("focus", show);
@@ -218,15 +262,13 @@ function drawScatter(host, readout, { points, xMetric, yMetric }) {
     root.append(group);
   }
   host.append(root);
+  restorePoint(host, focused);
 }
 
 function renderTradeoff() {
   const d = current();
   const yKeys = Y_KEYS.filter((k) => availableMetrics(d.kind).includes(k));
-  if (!yKeys.includes(state.y)) state.y = yKeys[0];
-  const select = $("y-axis");
-  select.replaceChildren();
-  for (const key of yKeys) select.append(new Option(columnLabel(key, d.kind), key, false, key === state.y));
+  setOptions($("y-axis"), yKeys.map(key => [key, columnLabel(key, d.kind)]), state.y);
   $("x-axis").value = state.x;
   const lowerBetter = METRICS[state.y].better === "low";
   $("tradeoff-hint").textContent = `${lowerBetter ? "Down" : "Up"} and to the left is better.`;
@@ -240,8 +282,10 @@ function renderTradeoff() {
 function renderPrecisionRecall() {
   const host = $("pr-chart");
   if (current().kind !== "mixed") {
+    const focused = focusedModel(host);
     host.replaceChildren(el("p", "message-state", "Precision and recall need both phishing and legitimate emails. Pick a dataset that has both."));
     $("pr-readout").textContent = "";
+    restorePoint(host, focused);
     return;
   }
   drawScatter(host, $("pr-readout"), {
@@ -258,10 +302,7 @@ function renderStacks() {
   const options = [["total", "Fewest total errors"]];
   if (d.kind !== "legitimate") options.push(["fn", "Fewest missed phishing"]);
   if (d.kind !== "phishing") options.push(["fp", "Fewest false alarms"]);
-  if (!options.some(([key]) => key === state.errors)) state.errors = "total";
-  const select = $("stack-sort");
-  select.replaceChildren();
-  for (const [key, label] of options) select.append(new Option(label, key, false, key === state.errors));
+  setOptions($("stack-sort"), options, state.errors);
   for (const r of sortByErrors(rows(), state.errors)) {
     const row = el("div", "stack-row");
     const track = el("div", "stack-track");
@@ -302,6 +343,7 @@ function renderShortlist() {
 function drawIntervals() {
   const host = $("interval-chart");
   const readout = $("interval-readout");
+  const focused = focusedModel(host);
   host.replaceChildren();
   readout.textContent = "";
   const items = sortRows(rows(), "accuracy").map((r) => ({ r, ci: accuracyInterval(r) }));
@@ -345,6 +387,7 @@ function drawIntervals() {
     const capLow = svgEl("line", { x1: sx(ci.low), x2: sx(ci.low), y1: y - 5, y2: y + 5 }, "whisker");
     const capHigh = svgEl("line", { x1: sx(ci.high), x2: sx(ci.high), y1: y - 5, y2: y + 5 }, "whisker");
     const dot = svgEl("circle", { cx: sx(r.accuracy), cy: y, r: 6, tabindex: 0, role: "img", "aria-label": detail }, overlaps ? "dot on-front" : "dot");
+    dot.dataset.model = modelId.get(r.model) || r.model;
     const show = () => { readout.textContent = detail; };
     dot.addEventListener("pointerenter", show);
     dot.addEventListener("focus", show);
@@ -353,6 +396,7 @@ function drawIntervals() {
     root.append(group);
   });
   host.append(root);
+  restorePoint(host, focused);
 
   $("interval-note").textContent = close.length
     ? `The shaded band is ${leader.model}'s interval. ${close.length === 1 ? "One model overlaps" : `${close.length} models overlap`} it (green: ${close.map((r) => r.model).join(", ")}), so on this sample they cannot be separated from the leader.`
@@ -360,7 +404,9 @@ function drawIntervals() {
 }
 
 function renderInbox() {
-  const prevalence = PREVALENCES[state.prevalence];
+  const prevalence = state.prevalence;
+  $("prevalence-range").value = PREVALENCES.indexOf(prevalence);
+  $("prevalence-range").setAttribute("aria-valuetext", pct(prevalence, prevalence < 0.01 ? 1 : 0) + " phishing prevalence");
   $("prevalence-value").textContent = pct(prevalence, prevalence < 0.01 ? 1 : 0);
   const target = $("inbox-chart");
   target.replaceChildren();
@@ -390,6 +436,7 @@ function renderInbox() {
 }
 
 function render() {
+  $("dataset-select").value = state.dataset;
   renderSummary();
   renderMetrics();
   renderShortlist();
@@ -401,31 +448,24 @@ function render() {
   renderInbox();
 }
 
-$("dataset-select").addEventListener("change", (event) => {
-  state.dataset = event.target.value;
+$("dataset-select").addEventListener("change", event => changeView({ dataset: event.target.value }));
+$("sort-select").addEventListener("change", event => {
+  const sort = event.target.value;
+  changeView({ sort, direction: sort === "model" ? "asc" : defaultDirection(sort) }, false, renderLeaderboard);
+});
+$("sort-direction").addEventListener("change", event => changeView({ direction: event.target.value }, false, renderLeaderboard));
+$("x-axis").addEventListener("change", event => changeView({ x: event.target.value }, false, renderTradeoff));
+$("y-axis").addEventListener("change", event => changeView({ y: event.target.value }, false, renderTradeoff));
+$("prevalence-range").addEventListener("input", event => changeView({ prevalence: PREVALENCES[Number(event.target.value)] }, true, renderInbox));
+$("stack-sort").addEventListener("change", event => changeView({ errors: event.target.value }, false, renderStacks));
+$("reset-view").addEventListener("click", () => { changeView(defaults); $("dataset-select").focus(); });
+window.addEventListener("popstate", () => {
+  state = parseView(new URL(window.location.href).searchParams, data.datasets);
   render();
+  writeURL(true);
+  announce();
 });
-$("sort-select").addEventListener("change", (event) => {
-  state.sort = event.target.value;
-  state.direction = state.sort === "model" ? "asc" : defaultDirection(state.sort);
-  renderLeaderboard();
-});
-$("x-axis").addEventListener("change", (event) => {
-  state.x = event.target.value;
-  renderTradeoff();
-});
-$("y-axis").addEventListener("change", (event) => {
-  state.y = event.target.value;
-  renderTradeoff();
-});
-$("prevalence-range").addEventListener("input", (event) => {
-  state.prevalence = Number(event.target.value);
-  renderInbox();
-});
-$("stack-sort").addEventListener("change", (event) => {
-  state.errors = event.target.value;
-  renderStacks();
-});
+mobile.addEventListener("change", headerTabStops);
 
 // Charts are drawn at the container's pixel width, so redraw when it changes.
 const widths = new Map();
@@ -446,3 +486,5 @@ observer.observe($("pr-chart"));
 observer.observe($("interval-chart"));
 
 render();
+writeURL(true);
+announce();

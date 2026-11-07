@@ -59,12 +59,15 @@ const metricNote = { mixed: "accuracy", phishing: "detection rate", legitimate: 
         {data.datasets.map((d) => <option value={d.id}>{d.label} ({int(d.emails)})</option>)}
       </select>
     </label>
-    <p class="dataset-summary" id="dataset-summary" aria-live="polite"></p>
+    <button id="reset-view" type="button">Reset view</button>
+    <p class="dataset-summary" id="dataset-summary"></p>
   </div>
+
+  <p id="view-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
 
   <section class="block" id="overview" aria-labelledby="overview-title">
     <div class="section-heading"><h2 id="overview-title">Overview</h2></div>
-    <div id="metrics" class="metric-grid" aria-live="polite"></div>
+    <div id="metrics" class="metric-grid"></div>
     <h3 class="subheading">Best for</h3>
     <p class="section-intro">The leading model or models for each need on the selected dataset.</p>
     <div class="table-wrap cards">
@@ -79,10 +82,10 @@ const metricNote = { mixed: "accuracy", phishing: "detection rate", legitimate: 
   <section class="block" id="leaderboard" aria-labelledby="leaderboard-title">
     <div class="section-heading">
       <h2 id="leaderboard-title">Leaderboard</h2>
-      <label class="chart-controls">
-        <span class="sr-only">Sort by</span>
-        <select id="sort-select" aria-label="Sort leaderboard by"></select>
-      </label>
+      <div class="chart-controls">
+        <label>Sort by <select id="sort-select" aria-label="Sort leaderboard by"></select></label>
+        <label>Direction <select id="sort-direction"><option value="desc">Descending</option><option value="asc">Ascending</option></select></label>
+      </div>
     </div>
     <p class="section-intro">Sort with the column headers or the menu. Metrics that need both classes are hidden on single-class sets.</p>
     <div class="table-wrap cards">
